@@ -1,0 +1,12 @@
+🧪 Etapes à suivre :
+Définir les états → position, direction, etc.
+
+Définir les actions possibles → tourner, avancer, etc.
+
+Créer une récompense → ex : +1 si proche du bord, -1 si bloqué
+
+Boucle d’entraînement (episodes)
+
+Stocker l’expérience (replay buffer)
+
+Utiliser le réseau entraîné pour jouer en direct
