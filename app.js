@@ -40,55 +40,22 @@ app.get("/",(req,res)=>{
 // Crée le réseau de neurones
 function createModel(){
   const model = tf.sequential();
-  model.add(tf.layers.dense({inputShape:[2],units:20,activation:"relu"}));// inputShape 2 entrée, units 20 neurone pour la premiaire couche
-  model.add(tf.layers.dense({units:20,activation:"relu"}));// units 20 neurone pour la deuxieme couche
+  model.add(tf.layers.dense({inputShape:[2],units:32,activation:"relu"}));// inputShape 2 entrée, units 32 neurone pour la premiaire couche
+  model.add(tf.layers.dense({units:32,activation:"relu"}));// units 32 neurone pour la deuxieme couche
   model.add(tf.layers.dense({units:actions.length,activation:"linear"}));// units actions.length actions possibles
   model.compile({ optimizer:"adam",loss:"meanSquaredError"});
   return model;
 }
 // Définir les actions possibles
-const actions = [
-  {direction_r1_deg:0,vitesse:0},
-  {direction_r1_deg:45,vitesse:0},
-  {direction_r1_deg:90,vitesse:0},
-  {direction_r1_deg:135,vitesse:0},
-  {direction_r1_deg:180,vitesse:0},
-  {direction_r1_deg:225,vitesse:0},
-  {direction_r1_deg:270,vitesse:0},
-  {direction_r1_deg:315,vitesse:0},
-  {direction_r1_deg:0,vitesse:1},
-  {direction_r1_deg:45,vitesse:1},
-  {direction_r1_deg:90,vitesse:1},
-  {direction_r1_deg:135,vitesse:1},
-  {direction_r1_deg:180,vitesse:1},
-  {direction_r1_deg:225,vitesse:1},
-  {direction_r1_deg:270,vitesse:1},
-  {direction_r1_deg:315,vitesse:1},
-];
-// Créer une récompense
-function getReward(x, y) {
-  const objectifX = 900;
-  const objectifY = 20;
-
-  // Distance euclidienne à l’objectif
-  const distance = Math.sqrt((x - objectifX) ** 2 + (y - objectifY) ** 2);
-
-  // Plus la distance est faible, plus la récompense est haute
-  // On retourne la valeur négative de la distance pour que le robot apprenne à la minimiser
-  const reward = -distance;
-
-  return reward;
-}
-//
+const actions = [0,45,90,135,180,225,270,315];
+// inissialisation de variables
 const longueur_terrain = 1200;
 const largeur_terrain = longueur_terrain / 1.75;
 const rayon_robot = largeur_terrain / 35;
-//let vitesse_robot = 0.5;//4
 let vitesse = 0;
 let xr1 = largeur_terrain / 2;
 let yr1 = longueur_terrain / 2;
 let direction_r1_deg = 135;// 0 = horizontal gauche en sens inverce des éguille d'une montre
-//const direction_r1_rad = direction_r1_deg * (Math.PI / 180);
 const canvas = createCanvas(largeur_terrain,longueur_terrain);
 const ctx = canvas.getContext("2d",{willReadFrequently:true});
 dataUrl = canvas.toDataURL();
@@ -97,6 +64,7 @@ io.on("connection",(socket) => {
   let dataUrl = canvas.toDataURL();
   socket.emit("image",dataUrl);
 });
+// Fonction dessin
 function dessin(){
   ctx.clearRect(0,0,largeur_terrain,longueur_terrain);
   // Dessine la ligne mediane
@@ -111,6 +79,16 @@ function dessin(){
   ctx.fillStyle = "white";
   ctx.arc(largeur_terrain / 2,longueur_terrain / 2,largeur_terrain / 70,0,Math.PI * 2);
   ctx.fill();
+  // Dessine l'objectif
+  ctx.beginPath();
+  ctx.fillStyle = "white";
+  ctx.arc(objectifX,objectifY,largeur_terrain / 70,0,Math.PI * 2);
+  ctx.fill();
+  // Dessine la zone de réconpence
+  ctx.beginPath();
+  ctx.fillStyle = "white";
+  ctx.arc(objectifX,objectifY,(largeur_terrain / 70) + 50,0,Math.PI * 2);
+  ctx.stroke();
   // Dessine les lignes de but
   ctx.beginPath();
   ctx.moveTo((largeur_terrain / 2) - 20,0);
@@ -131,33 +109,42 @@ function dessin(){
   ctx.fill();
   const dataUrl = canvas.toDataURL();
   io.emit("image",dataUrl);
-  // Calcule de xr1 yr1
-  //coefficient_r1_x = Math.cos(direction_r1_rad);
-  //coefficient_r1_y = Math.sin(direction_r1_rad);
-  //xr1 = xr1 - vitesse_r1 * coefficient_r1_x;
-  //yr1 = yr1 + vitesse_r1 * coefficient_r1_y;
-  // Empêche de sortir du terrain
-  if((xr1 + rayon_robot) >= largeur_terrain){
-    xr1 = largeur_terrain - rayon_robot;
-  }
-  if((xr1 - rayon_robot) <= 0){
-    xr1 = rayon_robot;
-  }
-  if((yr1 - rayon_robot) <= 0){
-    yr1 = rayon_robot;
-  }
-  if((yr1 + rayon_robot) >= longueur_terrain){
-    yr1 = longueur_terrain - rayon_robot;
-  }
 }
+// Créer une récompense
+const objectifX = largeur_terrain - (largeur_terrain / 4);
+const objectifY = longueur_terrain / 4;
+let lastDistance = null;
+function getReward(x, y) {
+  const distance = Math.sqrt((x - objectifX) ** 2 + (y - objectifY) ** 2);
+  let reward = 0;
 
-//
+  // 1. Grosse récompense si proche de la cible
+  if (distance < 10) {
+    reward += 10;
+  }
+
+  // 2. Récompense basée sur la réduction de la distance
+  if (lastDistance !== null) {
+    reward += lastDistance - distance; // positif si on se rapproche
+  }
+  lastDistance = distance;
+
+  // 3. Pénalité si on touche un mur
+  if (
+    x + rayon_robot >= largeur_terrain || x - rayon_robot <= 0 ||
+    y + rayon_robot >= longueur_terrain || y - rayon_robot <= 0
+  ) {
+    reward -= 5;
+  }
+
+  return reward;
+}
+// Paramaitre d'aprentissage de l'IA
 const model = createModel();
-let explorationRate = 1.0;
-const explorationDecay = 0.995;
-const explorationMin = 0.1;
-const discountFactor = 0.9;
-
+let explorationRate = 1;
+const explorationDecay = 0.9997;
+const explorationMin = 0.8;//0.5
+const discountFactor = 0.8;
 // Choisir une action (exploration ou exploitation)
 function chooseAction(state) {
   if (Math.random() < explorationRate) {
@@ -172,7 +159,7 @@ function chooseAction(state) {
   }
 }
 
-//let intervalId = setInterval(()=>{
+let modelSaved = false;
 let intervalId = setInterval(async () => {
   // État courant (normalisé)
   const state = [xr1 / largeur_terrain, yr1 / longueur_terrain];
@@ -182,8 +169,8 @@ let intervalId = setInterval(async () => {
   const action = actions[actionIndex];
 
   // Appliquer l'action
-  direction_r1_deg = action.direction_r1_deg;
-  vitesse_r1 = action.vitesse;
+  direction_r1_deg = actions[actionIndex];
+  vitesse_r1 = 1;
 
   // Déplacement
   const direction_r1_rad = direction_r1_deg * (Math.PI / 180);
@@ -222,9 +209,25 @@ let intervalId = setInterval(async () => {
 
   // Mise à jour exploration
   if (explorationRate > explorationMin) {
-    explorationRate *= explorationDecay;
+    explorationRate *= explorationDecay;// diminue progressivement explorationRate
+  }else if (!modelSaved) {// Sauvegarde du modèle une seule fois
+    //await model.save('file://ia/mon_modele');
+    //await model.save('file://ia/mon_modele');
+    //console.log("Modèle sauvegardé");
+    // Sauvegarde manuelle
+    const saveModel = async (model) => {
+      const saveResult = await model.save(tf.io.withSaveHandler(async (artifacts) => {
+      fs.mkdirSync('./ia', { recursive: true });
+      fs.writeFileSync('./ia/mon_modele.json', JSON.stringify(artifacts.modelTopology));
+      fs.writeFileSync('./ia/mon_modele.weights.bin', Buffer.from(artifacts.weightData));
+      return { modelArtifactsInfo: { dateSaved: new Date(), modelTopologyType: 'JSON', weightDataBytes: artifacts.weightData.byteLength } };
+    }))};
+    await saveModel(model);
+    modelSaved = true;
+    clearInterval(intervalId); // Stoppe la boucle d'entraînement
+    console.log("Entraînement terminé");
   }
-
+  console.log(explorationRate);
   // Affichage
   dessin();
 
