@@ -1,4 +1,4 @@
-🧪 Etapes à suivre :
+Etapes à suivre :
 Définir les états → position, direction, etc.
 
 Définir les actions possibles → tourner, avancer, etc.
@@ -10,3 +10,17 @@ Boucle d’entraînement (episodes)
 Stocker l’expérience (replay buffer)
 
 Utiliser le réseau entraîné pour jouer en direct
+
+
+------------------------------------------
+
+
+Charger le modèle depuis le dossier ./ia.
+
+Récupérer l’état courant du robot.
+
+Faire une prédiction avec model.predict(...).
+
+Appliquer l’action choisie.
+
+Redessiner.

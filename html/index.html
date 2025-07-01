@@ -7,8 +7,19 @@
     	<title>FOOT IA</title>
   	</head>
 	<body>
-		<div id="div_canvas">
-			<canvas id="canvas"></canvas>
+		<div class="div_general">
+			<div id="div_canvas">
+				<canvas id="canvas"></canvas>
+			</div>
+			<div class="div_conteneur_input">
+				<div class="div_input">
+					<input class="input_bouton" id="input_bouton_entrainee" type="button" value="Entraînée" />
+				</div>
+				<div class="div_input" id="div_bouton_jouer">
+					<input class="input_bouton" id="input_bouton_jouer" type="button" value="Jouer" />
+				</div>
+				<h4 class="reponse"></h4>
+			</div>
 		</div>
 	</body>
 </html>
@@ -16,6 +27,28 @@
 <script src="jquery.js"></script>
 <script>
   $(document).ready(()=>{
+  	$("#input_bouton_entrainee").click(()=>{
+	  	$.post("/entrainee",(res)=>{
+	  		$(".reponse").html(res);
+	  		$(".reponse").css("color","green");
+				//$("#input_bouton_entrainee").prop("disabled",true);
+	  	}).fail(()=>{
+				$(".reponse").html("Le serveur n'est pas joignable.");
+				$(".reponse").css("color","red");
+				$("#input_bouton_entrainee").prop("disabled",false);
+			})
+	  })
+	  $("#input_bouton_jouer").click(()=>{
+	  	$.post("/jouer",(res)=>{
+	  		$(".reponse").html(res);
+	  		$(".reponse").css("color","green");
+				//$("#input_bouton_entrainee").prop("disabled",true);
+	  	}).fail(()=>{
+				$(".reponse").html("Le serveur n'est pas joignable.");
+				$(".reponse").css("color","red");
+				$("#input_bouton_jouer").prop("disabled",false);
+			})
+	  })
     const socket = io();
     const canvas=$("#canvas")[0];
 		const ctx=canvas.getContext("2d",{willReadFrequently:true});
