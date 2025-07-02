@@ -33,6 +33,12 @@ const server = app.listen(port,(err)=>{
   }
 });
 const io = new Server(server);
+
+
+let model_loaded = false;
+let loadedModel = null;
+
+
 // Créer les différente réponce au action demmander par les client
 app.get("/",(req,res)=>{
 	res.render("index.html",{});
@@ -74,7 +80,7 @@ io.on("connection",(socket) => {
   let dataUrl = canvas.toDataURL();
   socket.emit("image",dataUrl);
 });
-let model_loaded = false;
+//let model_loaded = false;
 // Fonction dessin
 function dessin(){
   ctx.clearRect(0,0,largeur_terrain,longueur_terrain);
@@ -154,7 +160,7 @@ function getReward(x, y) {
 const model = createModel();
 let explorationRate = 1;
 const explorationDecay = 0.9997;
-const explorationMin = 0.9;//0.5
+const explorationMin = 0.5;//0.5
 const discountFactor = 0.8;
 // Choisir une action (exploration ou exploitation)
 function chooseAction(state) {
@@ -242,26 +248,34 @@ function horloge(){
       }
     }else{
       //console.log("jouer");
-      if(!model_loaded){
-        //
+
+
+      if (!model_loaded) {
+        const modelJson = fs.readFileSync('./ia/valider/mon_modele.json', 'utf8');
+        const modelWeights = fs.readFileSync('./ia/valider/mon_modele.weights.bin');
+        const handler = tf.io.fromMemory(JSON.parse(modelJson), modelWeights.buffer);
+        loadedModel = await tf.loadLayersModel(handler);
+
+        model_loaded = true;
       }
 
-  const state = [xr1 / largeur_terrain, yr1 / longueur_terrain, objectifX / largeur_terrain, objectifY / longueur_terrain];
-  const inputTensor = tf.tensor2d([state]);
-  const prediction = model.predict(inputTensor);
-  const actionIndex = prediction.argMax(1).dataSync()[0];
-  inputTensor.dispose();
-  prediction.dispose();
 
-  direction_r1_deg = actions[actionIndex];
-  vitesse_r1 = 1;
-  const direction_r1_rad = direction_r1_deg * (Math.PI / 180);
-  const coeffX = Math.cos(direction_r1_rad);
-  const coeffY = Math.sin(direction_r1_rad);
-  xr1 -= vitesse_r1 * coeffX;
-  yr1 += vitesse_r1 * coeffY;
 
-  dessin();
+      const state = [xr1 / largeur_terrain, yr1 / longueur_terrain, objectifX / largeur_terrain, objectifY / longueur_terrain];
+      const inputTensor = tf.tensor2d([state]);
+      //const prediction = model.predict(inputTensor);
+      const prediction = loadedModel.predict(inputTensor);
+      const actionIndex = prediction.argMax(1).dataSync()[0];
+      inputTensor.dispose();
+      prediction.dispose();
+      direction_r1_deg = actions[actionIndex];
+      vitesse_r1 = 1;
+      const direction_r1_rad = direction_r1_deg * (Math.PI / 180);
+      const coeffX = Math.cos(direction_r1_rad);
+      const coeffY = Math.sin(direction_r1_rad);
+      xr1 -= vitesse_r1 * coeffX;
+      yr1 += vitesse_r1 * coeffY;
+      dessin();
     }
   },20);
 }

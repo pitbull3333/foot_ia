@@ -160,7 +160,7 @@ function getReward(x, y) {
 const model = createModel();
 let explorationRate = 1;
 const explorationDecay = 0.9997;
-const explorationMin = 0.9;//0.5
+const explorationMin = 0.5;//0.5
 const discountFactor = 0.8;
 // Choisir une action (exploration ou exploitation)
 function chooseAction(state) {
@@ -255,6 +255,7 @@ function horloge(){
         const modelWeights = fs.readFileSync('./ia/valider/mon_modele.weights.bin');
         const handler = tf.io.fromMemory(JSON.parse(modelJson), modelWeights.buffer);
         loadedModel = await tf.loadLayersModel(handler);
+
         model_loaded = true;
       }
 
@@ -264,9 +265,7 @@ function horloge(){
       const inputTensor = tf.tensor2d([state]);
       //const prediction = model.predict(inputTensor);
       const prediction = loadedModel.predict(inputTensor);
-      console.log("Prédiction brute :", prediction.dataSync());
       const actionIndex = prediction.argMax(1).dataSync()[0];
-      console.log("Action choisie :", actionIndex);
       inputTensor.dispose();
       prediction.dispose();
       direction_r1_deg = actions[actionIndex];
