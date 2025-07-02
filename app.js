@@ -251,7 +251,11 @@ function horloge(){
 
 
       if (!model_loaded) {
-        loadedModel = await tf.loadLayersModel('file://./ia/valider/mon_modele.json');
+        const modelJson = fs.readFileSync('./ia/valider/mon_modele.json', 'utf8');
+        const modelWeights = fs.readFileSync('./ia/valider/mon_modele.weights.bin');
+        const handler = tf.io.fromMemory(JSON.parse(modelJson), modelWeights.buffer);
+        loadedModel = await tf.loadLayersModel(handler);
+
         model_loaded = true;
       }
 
