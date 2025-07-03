@@ -130,31 +130,21 @@ let lastDistance = null;
 function getReward(x, y) {
   const distance = Math.sqrt((x - objectifX) ** 2 + (y - objectifY) ** 2);
   let reward = 0;
-  // 1. Grosse récompense si proche de la cible
-  if (distance < 10) {
-    reward += 10;
+  // Récompense basée sur la réduction de la distance
+  if(lastDistance !== null){
+    reward += Math.tanh((lastDistance - distance) * 1);
   }
-  // 2. Récompense basée sur la réduction de la distance
-  if (lastDistance !== null) {
-    reward += lastDistance - distance; // positif si on se rapproche
+  if (Math.abs(lastDistance - distance) < 2) {
+    reward -= 0.1;
   }
   lastDistance = distance;
-
-  // 3. Pénalité si on touche un mur
-  if (
-    x + rayon_robot >= largeur_terrain || x - rayon_robot <= 0 ||
-    y + rayon_robot >= longueur_terrain || y - rayon_robot <= 0
-  ) {
-    reward -= 5;
-  }
-
   return reward;
 }
 // Paramaitre d'aprentissage de l'IA
 const model = createModel();
 let explorationRate = 1;
 const explorationDecay = 0.9997;
-const explorationMin = 0.5;//0.5
+const explorationMin = 0.3;//0.5
 const discountFactor = 0.8;
 // Choisir une action (exploration ou exploitation)
 function chooseAction(state) {
