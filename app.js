@@ -33,12 +33,8 @@ const server = app.listen(port,(err)=>{
   }
 });
 const io = new Server(server);
-
-
 let model_loaded = false;
 let loadedModel = null;
-
-
 // Créer les différente réponce au action demmander par les client
 app.get("/",(req,res)=>{
 	res.render("index.html",{});
@@ -134,12 +130,10 @@ let lastDistance = null;
 function getReward(x, y) {
   const distance = Math.sqrt((x - objectifX) ** 2 + (y - objectifY) ** 2);
   let reward = 0;
-
   // 1. Grosse récompense si proche de la cible
   if (distance < 10) {
     reward += 10;
   }
-
   // 2. Récompense basée sur la réduction de la distance
   if (lastDistance !== null) {
     reward += lastDistance - distance; // positif si on se rapproche
@@ -247,9 +241,6 @@ function horloge(){
         console.log("Entraînement terminé");
       }
     }else{
-      //console.log("jouer");
-
-
       if (!model_loaded) {
         const modelJson = fs.readFileSync('./ia/valider/mon_modele.json', 'utf8');
         const modelWeights = fs.readFileSync('./ia/valider/mon_modele.weights.bin');
@@ -258,9 +249,6 @@ function horloge(){
 
         model_loaded = true;
       }
-
-
-
       const state = [xr1 / largeur_terrain, yr1 / longueur_terrain, objectifX / largeur_terrain, objectifY / longueur_terrain];
       const inputTensor = tf.tensor2d([state]);
       //const prediction = model.predict(inputTensor);
