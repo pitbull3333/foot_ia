@@ -130,13 +130,12 @@ let lastDistance = null;
 function getReward(x, y) {
   const distance = Math.sqrt((x - objectifX) ** 2 + (y - objectifY) ** 2);
   let reward = 0;
-  // Récompense basée sur la réduction de la distance
   if(lastDistance !== null){
     reward += Math.tanh((lastDistance - distance) * 1);
   }
-  if (Math.abs(lastDistance - distance) < 2) {
-    reward -= 0.1;
-  }
+  //if (Math.abs(lastDistance - distance) < 2) {
+    //reward -= 0.1;
+  //}
   lastDistance = distance;
   return reward;
 }
@@ -144,8 +143,8 @@ function getReward(x, y) {
 const model = createModel();
 let explorationRate = 1;
 const explorationDecay = 0.9997;
-const explorationMin = 0.3;//0.5
-const discountFactor = 0.8;
+const explorationMin = 0.006;//0.006
+const discountFactor = 0.98;//0.98
 // Choisir une action (exploration ou exploitation)
 function chooseAction(state) {
   if (Math.random() < explorationRate) {
@@ -241,7 +240,6 @@ function horloge(){
       }
       const state = [xr1 / largeur_terrain, yr1 / longueur_terrain, objectifX / largeur_terrain, objectifY / longueur_terrain];
       const inputTensor = tf.tensor2d([state]);
-      //const prediction = model.predict(inputTensor);
       const prediction = loadedModel.predict(inputTensor);
       const actionIndex = prediction.argMax(1).dataSync()[0];
       inputTensor.dispose();

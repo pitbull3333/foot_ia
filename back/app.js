@@ -130,10 +130,12 @@ let lastDistance = null;
 function getReward(x, y) {
   const distance = Math.sqrt((x - objectifX) ** 2 + (y - objectifY) ** 2);
   let reward = 0;
-  // Récompense basée sur la réduction de la distance
   if(lastDistance !== null){
-    reward += lastDistance - distance;// positif si on se rapproche
+    reward += Math.tanh((lastDistance - distance) * 1);
   }
+  //if (Math.abs(lastDistance - distance) < 2) {
+    //reward -= 0.1;
+  //}
   lastDistance = distance;
   return reward;
 }
@@ -238,7 +240,6 @@ function horloge(){
       }
       const state = [xr1 / largeur_terrain, yr1 / longueur_terrain, objectifX / largeur_terrain, objectifY / longueur_terrain];
       const inputTensor = tf.tensor2d([state]);
-      //const prediction = model.predict(inputTensor);
       const prediction = loadedModel.predict(inputTensor);
       const actionIndex = prediction.argMax(1).dataSync()[0];
       inputTensor.dispose();
